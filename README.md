@@ -9,49 +9,27 @@ planet87/planet87 is a ✨ special ✨ repository because its `README.md` (this 
 You can click the Preview link to take a look at your changes.
 --->
 
-public class ShiJuAnswer {
-
-    static final String[] SPLITS = new String[]{",", "，", " ", ".", "。", "!", "！", "?", "？"};
-
-
-    public static String progress(String front) throws Exception {
-        if (front.contains("下句是")) {
-            String pre = front.substring(0, front.indexOf("下句是"));
-            for (String s : SPLITS) {
-                pre = pre.replace(s, "");
-            }
-            return nextSentence(pre);
-        } else {
-            return baiduType(front);
+@RequestMapping("/answer")
+    @ResponseBody
+    public String answer(HttpServletResponse response, HttpServletRequest request) throws Exception {
+        System.out.println(DateFormatUtils.format(new Date(), "HH:mm:ss.SSS") + " Calling.Start..");
+        response.addHeader("Access-Control-Allow-Origin", "*");
+        String args = request.getParameter("args").replaceAll(" ", "+");
+        byte[] bts = Base64.getDecoder().decode(args);
+        String input = new String(bts, "UTF-8");
+        System.out.println("Input:" + input);
+        JSONObject jo = JSON.parseObject(input);
+        String q = jo.getString("q");
+        JSONArray ja = jo.getJSONArray("ql");
+        List<String> lst = new ArrayList<>();
+        System.out.println("QuestList:");
+        for (Object j : ja) {
+            lst.add(String.valueOf(j));
+            System.out.println(String.valueOf(j));
         }
+        System.out.println("=====================");
+        String k = ShiJuAnswer.progress(q);
+        System.out.println(DateFormatUtils.format(new Date(), "HH:mm:ss.SSS") + " Calling.End..");
+        System.out.println("Question:" + q + ";Answer=" + k);
+        return k;
     }
-
-    private static String baiduType(String question) {
-        return null;
-    }
-
-    public static String nextSentence(String front) throws Exception {
-        String tplUrl = "https://so.gushiwen.cn/search.aspx?value=" + front + "&valuej=" + front.substring(0, 1);
-        String rsp = HttpCall.getUrl(tplUrl, new HashMap<>(), new HashMap<>());
-        rsp = rsp.substring(rsp.indexOf(front) + front.length());
-
-        int idx = rsp.indexOf(front);
-        if (idx < 0) {
-            return "Failed1";
-        }
-        rsp = rsp.substring(idx + front.length());
-        int s2 = rsp.indexOf("</textarea>");
-        if (s2 < 0) {
-            return "Failed2";
-        }
-        String content = rsp.substring(0, s2);
-
-        String[] dvs = content.split("[,， .。!！?？]");
-        for (String d : dvs) {
-            if (null != d && d.trim().length() != 0 && d.trim().length() < 10) {
-                return d.trim();
-            }
-        }
-        return "Failed3";
-    }
-}
